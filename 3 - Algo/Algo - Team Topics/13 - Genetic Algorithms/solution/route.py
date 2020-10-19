@@ -1,17 +1,27 @@
 from typing import List
-from city import City
+
 import numpy as np
+
+from environment import Environment
 
 
 class Route:
 
-    def __init__(self, cities: List[City], order=None):
-        self.order = order if order else list(np.random.permutation(len(cities)))
-        self.cities = [cities[i] for i in self.order]
-        self.length = self.get_length()
+    def __init__(self, env: Environment, order: np.ndarray):
+        self.env = env
+        self.order = order
+        self.length = 0
 
     def get_length(self):
-        return np.sum([b.dist(a) for a, b in zip(self.cities, self.cities[1:])]) + self.cities[-1].dist(self.cities[0])
+        return np.sum(self.env.dists[self.order[:-1], self.order[1:]])
 
     def fitness(self):
         return 1/self.length
+
+    @staticmethod
+    def calc_lengths(routes: List['Route']):
+        sources = np.hstack([route.order[:-1] for route in routes])
+        targets = np.hstack([route.order[1:] for route in routes])
+        lengths = np.sum(routes[0].env.dists[sources, targets].reshape(len(routes), -1), axis=1)
+        for i, l in enumerate(lengths):
+            routes[i].length = l
